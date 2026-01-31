@@ -1,0 +1,35 @@
+# Minimal .gitignore for Node.js server
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+*.pid
+*.seed
+
+# Coverage
+coverage/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database local files
+data/
+mongodb_data/
+
+# Uploads
+uploads/
+tmp/
