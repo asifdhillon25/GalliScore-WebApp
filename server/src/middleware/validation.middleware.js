@@ -190,6 +190,46 @@ const commonValidators = {
       .isInt({ min: 1 }).withMessage('Max overs per bowler must be at least 1')
   ],
 
+  // Venue validators
+  createVenue: [
+    check('name')
+      .trim()
+      .notEmpty().withMessage('Venue name is required')
+      .isLength({ max: 100 }).withMessage('Venue name cannot exceed 100 characters'),
+
+    check('shortName')
+      .optional()
+      .trim()
+      .isLength({ max: 10 }).withMessage('Short name cannot exceed 10 characters'),
+
+    check('address.city')
+      .trim()
+      .notEmpty().withMessage('City is required')
+      .isLength({ max: 50 }).withMessage('City cannot exceed 50 characters'),
+
+    check('address.country')
+      .optional()
+      .trim()
+      .isLength({ max: 50 }).withMessage('Country cannot exceed 50 characters'),
+
+    check('type')
+      .optional()
+      .isIn(['stadium', 'ground', 'academy', 'school', 'college', 'club'])
+      .withMessage('Invalid venue type'),
+
+    check('capacity')
+      .optional()
+      .isInt({ min: 0 }).withMessage('Capacity cannot be negative'),
+
+    check('coordinates.latitude')
+      .optional()
+      .isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90'),
+
+    check('coordinates.longitude')
+      .optional()
+      .isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180')
+  ],
+
   // Ball scoring validators
   scoreBall: [
     check('inningId')

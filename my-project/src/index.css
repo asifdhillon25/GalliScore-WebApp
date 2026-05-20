@@ -1,10 +1,47 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
+  html {
+    min-width: 320px;
+  }
 
-body{
-    height: 100vh;
-    background-color: rgb(22, 15, 39);
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, system-ui, sans-serif;
+    background: #f8fafc;
+  }
+
+  .dark body {
+    background: #020617;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  ::selection {
+    background: rgba(16, 185, 129, 0.28);
+  }
+}
+
+@layer components {
+  .table-shell {
+    @apply overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.06];
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black;
+  }
 }

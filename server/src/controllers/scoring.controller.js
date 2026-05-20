@@ -2,6 +2,7 @@ const Inning = require('../models/Inning.model');
 const Over = require('../models/Over.model');
 const Match = require('../models/Match.model');
 const Player = require('../models/Player.model');
+const Team = require('../models/Team.model');
 const BattingStats = require('../models/BattingStats.model');
 const BowlingStats = require('../models/BowlingStats.model');
 const CricketRules = require('../utils/cricketRules');

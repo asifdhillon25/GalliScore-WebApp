@@ -17,6 +17,8 @@ const matchRoutes = require('./src/routes/match.routes');
 const scoringRoutes = require('./src/routes/scoring.routes');
 const tournamentRoutes = require('./src/routes/tournament.routes');
 const venueRoutes = require('./src/routes/venue.routes');
+const inningRoutes = require('./src/routes/inning.routes');
+const overRoutes = require('./src/routes/over.routes');
 
 const app = express();
 
@@ -92,6 +94,8 @@ app.use('/api/matches', apiLimiter, matchRoutes);
 app.use('/api/scoring', apiLimiter, scoringRoutes);
 app.use('/api/tournaments', apiLimiter, tournamentRoutes);
 app.use('/api/venues', apiLimiter, venueRoutes);
+app.use('/api/innings', apiLimiter, inningRoutes);
+app.use('/api/overs', apiLimiter, overRoutes);
 
 // API Documentation route
 app.get('/api', (req, res) => {
@@ -106,7 +110,9 @@ app.get('/api', (req, res) => {
       matches: '/api/matches',
       scoring: '/api/scoring',
       tournaments: '/api/tournaments',
-      venues: '/api/venues'
+      venues: '/api/venues',
+      innings: '/api/innings',
+      overs: '/api/overs'
     }
   });
 });
@@ -125,12 +131,18 @@ app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📊 Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
-  console.log(`🔗 API: http://localhost:${PORT}/api`);
-});
+const startServer = async () => {
+  await connectDB();
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📊 Database: Connected`);
+    console.log(`🔗 API: http://localhost:${PORT}/api`);
+  });
+};
+
+startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

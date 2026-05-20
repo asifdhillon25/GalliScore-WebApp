@@ -34,15 +34,24 @@ const venueSchema = new mongoose.Schema({
   },
   
   coordinates: {
-    latitude: {
-      type: Number,
-      min: [-90, 'Latitude must be between -90 and 90'],
-      max: [90, 'Latitude must be between -90 and 90']
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
     },
-    longitude: {
-      type: Number,
-      min: [-180, 'Longitude must be between -180 and 180'],
-      max: [180, 'Longitude must be between -180 and 180']
+    coordinates: {
+      type: [Number],
+      validate: {
+        validator: function(value) {
+          if (!value || value.length === 0) return true;
+          return value.length === 2 &&
+            value[0] >= -180 &&
+            value[0] <= 180 &&
+            value[1] >= -90 &&
+            value[1] <= 90;
+        },
+        message: 'Coordinates must be [longitude, latitude]'
+      }
     }
   },
   

@@ -29,8 +29,9 @@ const authController = {
   // Register new user
   register: async (req, res, next) => {
     try {
-      const { username, email, password, firstName, lastName, phoneNumber, role } = req.body;
+      const { username, email, password, firstName, lastName, phoneNumber="03166588770", role } = req.body;
 
+      console.log("Registering user with data:", { username, email, firstName, lastName, phoneNumber, role });
       // Check if user already exists
       const existingUser = await User.findOne({
         $or: [{ email }, { username }]

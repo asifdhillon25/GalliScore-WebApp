@@ -1,50 +1,36 @@
 import React, { useState, useEffect } from "react";
 import Button from "./Button.component";
 import axios from "axios";
-import Checkbox from "./CheckBox.component";
-import Modal from "./model.component";
 import { useNavigate } from 'react-router-dom';
+import { RefreshCw, Users, Target, Award, ChevronRight } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 function ScoreBoard() {
-
   const navigate = useNavigate();
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBatterModalOpen, setIsBatterModalOpen] = useState(false);
-  const [newBowlerName, setNewBowlerName] = useState("");
-  const [TotalOver, SetTotalOver] = useState(0);
-  const [MaxWickets, SetMaxWickets] = useState(0);
-  const [BowlingTeamPlayers, SetBowlingTeamPlayers] = useState([]);
-  const [BattingTeamPlayers, SetBattingTeamPlayers] = useState([]);
-  const [TeamBat, setTeamBat] = useState("");
-  const [TeamBowl, setTeamBowl] = useState("");
-  const [Striker, setStriker] = useState("");
-  const [nonStriker, setNonStriker] = useState("");
-  const [Bowler, setBowler] = useState("");
-  const [TeamRuns, setTeamRuns] = useState(0);
-  const [StrikerRuns, setStrikerRuns] = useState(0);
-  const [StrikerBalls, setStrikerBalls] = useState(0);
-  const [nonStrikerRuns, setNonStrikerRuns] = useState(0);
-  const [nonStrikerBalls, setNonStrikerBalls] = useState(0);
-  const [TotalWickets, setTotalWickets] = useState(0);
-  const [BowlerWickets, setBowlerWickets] = useState(0);
-  const [OverBalls, setBowlerBalls] = useState([]);
-  const [BowlerRun, setBowlerRun] = useState(0);
-  const [CurrentOver, setCurrentOver] = useState(0);
-  const [CurrentBall, setCurrentBall] = useState(0);
-  const [BowlerOverNo, setBowlerOverNo] = useState(0);
-  const [InningCount, setInningcount] = useState(0);
-
-  // To set checkboxes and run input
-  const [wicket, setWicket] = useState(false);
-  const [wide, setWide] = useState(false);
-  const [dot, setDot] = useState(false);
-  const [noBall, setNoBall] = useState(false);
-  const [bye, setBye] = useState(false);
-  const [legBye, setLegBye] = useState(false);
-  const [run, setRun] = useState(0);
+  const [matchData, setMatchData] = useState({
+    teamBat: "",
+    teamBowl: "",
+    teamRuns: 0,
+    totalWickets: 0,
+    currentOver: 0,
+    currentBall: 0,
+    striker: { name: "", runs: 0, balls: 0 },
+    nonStriker: { name: "", runs: 0, balls: 0 },
+    bowler: { name: "", wickets: 0, runs: 0, overs: 0 },
+    overBalls: [],
+  });
+  const [selectedRun, setSelectedRun] = useState(null);
+  const [extras, setExtras] = useState({
+    wicket: false,
+    wide: false,
+    noBall: false,
+    bye: false,
+    legBye: false,
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   const scoreBoardId1 = localStorage.getItem("scoreBoardId");
 
@@ -54,28 +40,31 @@ function ScoreBoard() {
         `${apiUrl}/api/scoreboard/${scoreBoardId1}`
       );
       const data = response.data;
-      console.log(data);
-      // Set state values from the response data
-      setTeamBat(data.TeamBat);
-      setTeamBowl(data.TeamBowl);
-      setStriker(data.Striker);
-      setNonStriker(data.nonStriker);
-      setBowler(data.Bowler);
-      setTeamRuns(data.TeamRuns);
-      setStrikerRuns(data.StrikerRuns);
-      setStrikerBalls(data.StrikerBalls);
-      setNonStrikerRuns(data.nonStrikerRuns);
-      setNonStrikerBalls(data.nonStrikerBalls);
-      setTotalWickets(data.TotalWickets);
-      console.log("tow",data.TotalWickets);
-      setBowlerWickets(data.BowlerWickets);
-      setBowlerBalls(data.BowlerBalls);
-      setBowlerRun(data.BowlerRun);
-      setCurrentOver(data.CurrentOver);
-      setCurrentBall(data.CurrentBall);
-      setBowlerOverNo(data.BowlerOverNo);
-      setBowlerBalls(data.OverBalls);
-      setCurrentOver(data.CurrentOver);
+      setMatchData({
+        teamBat: data.TeamBat,
+        teamBowl: data.TeamBowl,
+        teamRuns: data.TeamRuns,
+        totalWickets: data.TotalWickets,
+        currentOver: data.CurrentOver,
+        currentBall: data.CurrentBall,
+        striker: {
+          name: data.Striker,
+          runs: data.StrikerRuns,
+          balls: data.StrikerBalls,
+        },
+        nonStriker: {
+          name: data.nonStriker,
+          runs: data.nonStrikerRuns,
+          balls: data.nonStrikerBalls,
+        },
+        bowler: {
+          name: data.Bowler,
+          wickets: data.BowlerWickets,
+          runs: data.BowlerRun,
+          overs: data.BowlerOverNo,
+        },
+        overBalls: data.OverBalls || [],
+      });
     } catch (error) {
       console.error("Error fetching scoreboard data:", error);
     }
@@ -84,388 +73,331 @@ function ScoreBoard() {
   useEffect(() => {
     if (scoreBoardId1) {
       GetData();
-      GetMatchData();
-      
+      // Poll for updates every 5 seconds
+      const interval = setInterval(GetData, 5000);
+      return () => clearInterval(interval);
     }
   }, [scoreBoardId1]);
 
-  const GetMatchData = async () => {
-    try {
-      const MatchId = localStorage.getItem("MatchId");
-
-      const response = await axios.get(`${apiUrl}/api/MatchData`, {
-        params: { MatchId }, // Pass MatchId as a query parameter
-      });
-
-      const { NoOfWickets, NoOfOvers } = response.data;
-      SetMaxWickets(NoOfWickets);
-      SetTotalOver(NoOfOvers);
-    } catch (error) {
-      console.error("Error fetching match data:", error);
-    }
-  };
-
   const handleBallSubmission = async () => {
+    if (selectedRun === null && !extras.wicket && !extras.wide && !extras.noBall && !extras.bye && !extras.legBye) {
+      alert("Please select a run or extra");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-     
-
-      
-
       const strikerId = localStorage.getItem("strikerId");
       const nonStrikerId = localStorage.getItem("nonStrikerId");
       const bowlerId = localStorage.getItem("bowlerId");
       const MatchId = localStorage.getItem("MatchId");
 
-      console.log("data from handle ball",strikerId,nonStrikerId,bowlerId);
-
-     
-      
-      
-
-
       await axios.post(`${apiUrl}/api/setnewball`, {
-        wicket,
-        wide,
-        noBall,
-        dot,
-        bye,
-        legBye,
-        run,
+        wicket: extras.wicket,
+        wide: extras.wide,
+        noBall: extras.noBall,
+        dot: selectedRun === 0,
+        bye: extras.bye,
+        legBye: extras.legBye,
+        run: selectedRun || 0,
         scoreBoardId1,
         strikerId,
         nonStrikerId,
         bowlerId,
         MatchId,
       });
-      
-if ((run == 1 || run == 3 || run == 5) && CurrentBall != 5) {
-  SwapBatsman();
-} else {
-  await GetData();
-  
-}
 
-if(wicket==true)
-{
-  setIsBatterModalOpen(true);
-}
+      // Reset selections
+      setSelectedRun(null);
+      setExtras({
+        wicket: false,
+        wide: false,
+        noBall: false,
+        bye: false,
+        legBye: false,
+      });
 
-      setWicket(false);
-      setWide(false);
-      setDot(false);
-      setNoBall(false);
-      setBye(false);
-      setLegBye(false);
-      setRun(0);
+      await GetData();
     } catch (error) {
       console.error("Error submitting ball details:", error);
+      alert("Failed to submit ball. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-
-useEffect(()=>
-{
-  console.log(" from use effect CurrentBall",CurrentBall,"MaxWickets",MaxWickets,"TotalWickets",TotalWickets);
-
-if(MaxWickets!==0 && TotalOver!==0)
-{
-  
-  if(TotalWickets>=MaxWickets || CurrentOver>=TotalOver)
-  {
-    const inningstatus = localStorage.getItem("inningfinished");
-    console.log('inningstatus: ',inningstatus);
-    if(  inningstatus=== "true")
-      {
-        console.log('match finished');
-        navigate("/UserPage");
-
-      }
-      else{
-        FinishInnings();
-      }
-    
-  }
-}
-
-if (CurrentBall ==0 && CurrentOver!==0) {
-  setIsModalOpen(true);
-}
-
-GetTeamPlayers();
-
-},[CurrentBall,CurrentOver,TotalWickets,TotalOver,wicket,noBall,wide])  
-
-  const FinishInnings = async () => {
-
-    localStorage.setItem("inningfinished",true);
-
-   
-    console.log("finish caled");
-navigate("/SecondInning");
-    
+  const getBallColor = (ball) => {
+    if (ball === 'W') return 'ball-wicket';
+    if (ball.includes('Wd')) return 'ball-wide';
+    if (ball.includes('Nb')) return 'ball-noball';
+    if (ball === '0') return 'ball-dot';
+    if (ball === '4') return 'ball-four';
+    if (ball === '6') return 'ball-six';
+    if (['1', '2', '3', '5'].includes(ball)) return 'ball-run';
+    return 'ball-dot';
   };
-
-  const SwapBatsman = async () => {
-    const strikerId2 = localStorage.getItem("strikerId");
-    const nonStrikerId2 = localStorage.getItem("nonStrikerId");
-    localStorage.setItem("strikerId", nonStrikerId2);
-    localStorage.setItem("nonStrikerId", strikerId2);
-    const strikerId = localStorage.getItem("strikerId");
-    const nonStrikerId = localStorage.getItem("nonStrikerId");
-    const MatchId = localStorage.getItem("MatchId");
-
-    await axios.put(`${apiUrl}/api/swapBatsman`, {
-      scoreBoardId1,
-      strikerId,
-      nonStrikerId,
-      MatchId,
-    });
-    await GetData();
-  };
-
-  const handleModalConfirm = async (inputValue) => {
-    // Directly use inputValue for the request
-    setIsModalOpen(false);
-    const MatchId = localStorage.getItem("MatchId");
-    const bowlingTeam = localStorage.getItem("bowlingTeam");
-    const scoreBoardId1 = localStorage.getItem("scoreBoardId");
-
-    try {
-      const response = await axios.post(`${apiUrl}/api/newbowler`, {
-        MatchId,
-        newBowlerName: inputValue, // Use inputValue directly
-        bowlingTeam,
-        scoreBoardId1,
-      });
-
-      const { bowlerid } = response.data;
-      localStorage.setItem("bowlerId", bowlerid);
-      console.log("Bowler ID returned:", bowlerid);
-
-      await GetData();
-    } catch (error) {
-      console.error(
-        "Error creating new bowler:",
-        error.response ? error.response.data : error.message
-      );
-    }
-  };
-
-
-  const handleBatterModalConfirm = async (inputValue)=>
-  {
-    setIsBatterModalOpen(false);
-    const MatchId = localStorage.getItem("MatchId");
-    const BattingTeam = localStorage.getItem("battingTeam");
-    const scoreBoardId1 = localStorage.getItem("scoreBoardId");
-console.log("checking team bat id or name it must id",BattingTeam);
-
-    try {
-      const response = await axios.post(`${apiUrl}/api/newbatter`, {
-        MatchId,
-        newBatterName: inputValue, // Use inputValue directly
-        BattingTeam,
-        scoreBoardId1,
-      });
-
-      const { battingid } = response.data;
-      localStorage.setItem("strikerId", battingid);
-      console.log("battingid ID returned:", battingid);
-
-      await GetData();
-    } catch (error) {
-      console.error(
-        "Error creating new bowler:",
-        error.response ? error.response.data : error.message
-      );
-    }
-  }
-  const getTextSize = (item) => {
-    return item.length > 2 ? "text-xs" : "text-xl";
-  };
-
-  const GetTeamPlayers =async ()=>
-  {
-    const teambat = localStorage.getItem("battingTeam");
-    const teambowl = localStorage.getItem("bowlingTeam");
-
-    try {
-    
-      const response = await axios.get(`${apiUrl}/api/players/${teambat}/${teambowl}`);
-      SetBattingTeamPlayers(response.data.teambatplayers);
-      SetBowlingTeamPlayers(response.data.teambowlplayers);
-      
-    } catch (error) {
-      console.error(
-        "Error getting players:",
-        error.response ? error.response.data : error.message
-      );
-    }
-  }
 
   return (
-    <div className="flex justify-around items-center ">
-      <Modal
-        message="Enter New Bowler name"
-        onConfirm={handleModalConfirm}
-        placeholder={"Shoaib Akhtar"}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
-
-    <Modal
-        message="Enter New Batter name"
-        placeholder={"e.g: Babar Azam"}
-        onConfirm={handleBatterModalConfirm}
-        isOpen={isBatterModalOpen}
-        onClose={() => setIsBatterModalOpen(false)}
-      />
-
-      {/* Left players of Team1 */}
-      <div className="w-[20%] flex items-start justify-start text-start gap-1 flex-col">
-        {BattingTeamPlayers.map((thisplayer) => (
-          <div
-            key={thisplayer._id}
-            className="text-left w-full rounded-lg p-2 text-xl bg-blue-600 shadow-md font-bold text-white"
-          >
-            {thisplayer.pName}
-          </div>
-        ))}
-      </div>
-
-      {/* Middle scoreboard */}
-      <div>
-        <div className="flex items-center justify-center text-2xl gap-1 text-white font-bold mt-3">
-          <div>{TeamBat}</div>
-          <div>{TeamRuns}</div>
-          <div> - {TotalWickets}</div>
-        </div>
-        <div className="flex items-center justify-center gap-3 mt-3">
-          {[0, 1, 2, 3, 4, 5, 6].map((num) => (
-            <Button
-              key={num}
-              className={
-                "w-16 h-16 bg-blue-500 active:border-none rounded-full"
-              }
-              onClick={() => setRun(num)}
-            >
-              {num}
-            </Button>
-          ))}
-        </div>
-        <div className="flex items-center justify-center gap-3 mt-3">
-          <Checkbox
-            id="wicket"
-            label="W"
-            checked={wicket}
-            onChange={() => setWicket(!wicket)}
-          />
-          <Checkbox
-            id="wide"
-            label="WD"
-            checked={wide}
-            onChange={() => setWide(!wide)}
-          />
-          <Checkbox
-            id="dot"
-            label="D"
-            checked={dot}
-            onChange={() => setDot(!dot)}
-          />
-          <Checkbox
-            id="noBall"
-            label="Nb"
-            checked={noBall}
-            onChange={() => setNoBall(!noBall)}
-          />
-          <Checkbox
-            id="bye"
-            label="Bye"
-            checked={bye}
-            onChange={() => setBye(!bye)}
-          />
-          <Checkbox
-            id="legBye"
-            label="Leg Bye"
-            checked={legBye}
-            onChange={() => setLegBye(!legBye)}
-          />
-        </div>
-        <div className="flex items-center justify-center gap-4 mt-5">
-          <div className="flex items-center justify-center text-2xl gap-1 p-2 rounded text-white bg-blue-400 font-bold">
-            <div>{Striker}</div>
-            <div className="text-2xl gap-1 text-red-600 font-bold mr-4">*</div>
-            <div className="text-2xl gap-1 text-white font-bold">
-              {StrikerRuns}
-            </div>
-            <div className="text-sm gap-1 text-white font-bold">
-              {StrikerBalls}
-            </div>
-          </div>
-          <div className="flex items-center justify-center text-2xl gap-1 p-2 rounded text-white bg-blue-400 font-bold">
-            <div>{nonStriker}</div>
-            <div className="text-2xl gap-1 text-white font-bold">
-              {nonStrikerRuns}
-            </div>
-            <div className="text-sm gap-1 text-white font-bold">
-              {nonStrikerBalls}
-            </div>
-          </div>
-        </div>
-
-        <div className={"flex items-center justify-center m-2"}>
-          <Button onClick={SwapBatsman}>Swap Batsman</Button>
-        </div>
-
-        <div className="flex items-center justify-center">
-          <div className="flex items-center justify-center gap-4 mt-5 p-4 rounded-lg bg-blue-400">
-            <div className="flex flex-col items-center justify-center">
-              <div className="text-2xl p-2 rounded text-white bg-blue-400 font-bold">
-                {Bowler}
-              </div>
-              <div className="flex items-center justify-center gap-4 text-white font-bold text-xl">
-                <div>
-                  {BowlerOverNo}.{CurrentBall}
-                </div>
-                <div>
-                  {BowlerWickets}-{BowlerRun}
-                </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Score Header */}
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-b-3xl p-6 mb-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {matchData.teamBat} vs {matchData.teamBowl}
+              </h2>
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <Target className="w-4 h-4" />
+                <span>Match in Progress</span>
               </div>
             </div>
-            <div className="flex gap-2">
-              {OverBalls.map((item, index) => (
-                <div
-                  key={index} // Use index as key here to ensure uniqueness
-                  className={`w-8 h-8 rounded-full flex items-center justify-center bg-white text-blue-400 font-bold ${getTextSize(
-                    item
-                  )}`}
-                >
-                  {item}
-                </div>
-              ))}
+            
+            <div className="text-center">
+              <div className="score-display text-5xl md:text-6xl text-gray-900 dark:text-white mb-2">
+                {matchData.teamRuns}<span className="text-gray-400">/</span>{matchData.totalWickets}
+              </div>
+              <div className="text-lg text-gray-600 dark:text-gray-400">
+                Overs: {matchData.currentOver}.{matchData.currentBall}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/BattingStats')}
+                icon={<Users className="w-4 h-4" />}
+              >
+                Batting Stats
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/BowlingStats')}
+                icon={<Award className="w-4 h-4" />}
+              >
+                Bowling Stats
+              </Button>
             </div>
           </div>
-        </div>
-        <div className="flex justify-center mt-5">
-          <Button
-            className={"bg-blue-500 text-white rounded-lg p-2"}
-            onClick={handleBallSubmission}
-          >
-            Submit Ball
-          </Button>
         </div>
       </div>
 
-      {/* Right players of Team2 */}
-      <div className="w-[20%] flex items-start justify-start text-start gap-1 flex-col">
-        {BowlingTeamPlayers.map((thisplayer) => (
-          <div
-            key={thisplayer._id}
-            className="text-left w-full rounded-lg p-2 text-xl bg-blue-600 shadow-md font-bold text-white"
-          >
-            {thisplayer.pName}
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left: Batting Team */}
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-cricket-600" />
+              {matchData.teamBat} - Batting
+            </h3>
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-cricket-50 to-green-50 dark:from-cricket-900/20 dark:to-green-900/20 p-4 rounded-lg border border-cricket-100 dark:border-cricket-800">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-900 dark:text-white">
+                      {matchData.striker.name}
+                    </span>
+                    <span className="text-cricket-600 font-bold">*</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="score-display text-xl">
+                      {matchData.striker.runs}
+                      <span className="text-gray-400 text-sm ml-1">({matchData.striker.balls})</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span>Strike Rate: {matchData.striker.balls > 0 
+                    ? ((matchData.striker.runs / matchData.striker.balls) * 100).toFixed(2)
+                    : '0.00'}</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    {matchData.nonStriker.name}
+                  </span>
+                  <div className="score-display">
+                    {matchData.nonStriker.runs}
+                    <span className="text-gray-400 text-sm ml-1">({matchData.nonStriker.balls})</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        ))}
+
+          {/* Center: Score Input */}
+          <div className="card lg:col-span-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+              Ball Input
+            </h3>
+            
+            {/* Runs Selection */}
+            <div className="mb-8">
+              <label className="form-label">Select Runs</label>
+              <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
+                {[0, 1, 2, 3, 4, 5, 6].map((run) => (
+                  <button
+                    key={run}
+                    onClick={() => {
+                      setSelectedRun(run);
+                      setExtras({
+                        wicket: false,
+                        wide: false,
+                        noBall: false,
+                        bye: false,
+                        legBye: false,
+                      });
+                    }}
+                    className={`
+                      h-14 rounded-lg font-bold text-lg transition-all duration-200
+                      ${selectedRun === run
+                        ? run === 4 
+                          ? 'bg-green-600 text-white ring-2 ring-green-500'
+                          : run === 6
+                          ? 'bg-purple-600 text-white ring-2 ring-purple-500'
+                          : 'bg-cricket-600 text-white ring-2 ring-cricket-500'
+                        : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-300'
+                      }
+                    `}
+                  >
+                    {run}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Extras Selection */}
+            <div className="mb-8">
+              <label className="form-label">Extras & Wicket</label>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {[
+                  { label: 'Wicket', key: 'wicket', color: 'red' },
+                  { label: 'Wide', key: 'wide', color: 'yellow' },
+                  { label: 'No Ball', key: 'noBall', color: 'orange' },
+                  { label: 'Bye', key: 'bye', color: 'gray' },
+                  { label: 'Leg Bye', key: 'legBye', color: 'blue' },
+                ].map((extra) => (
+                  <button
+                    key={extra.key}
+                    onClick={() => {
+                      setExtras({
+                        wicket: false,
+                        wide: false,
+                        noBall: false,
+                        bye: false,
+                        legBye: false,
+                        [extra.key]: !extras[extra.key],
+                      });
+                      if (!extras[extra.key]) setSelectedRun(null);
+                    }}
+                    className={`
+                      h-12 rounded-lg font-medium transition-all duration-200
+                      ${extras[extra.key]
+                        ? `bg-${extra.color}-600 text-white ring-2 ring-${extra.color}-500`
+                        : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-300'
+                      }
+                    `}
+                  >
+                    {extra.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Current Over */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <label className="form-label">Current Over</label>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {matchData.bowler.name} - {matchData.bowler.overs}.{matchData.currentBall}
+                </span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {matchData.overBalls.map((ball, index) => (
+                  <div
+                    key={index}
+                    className={`over-ball ${getBallColor(ball)}`}
+                  >
+                    {ball}
+                  </div>
+                ))}
+                {Array.from({ length: 6 - matchData.overBalls.length }).map((_, index) => (
+                  <div
+                    key={`empty-${index}`}
+                    className="over-ball bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700"
+                  >
+                    ·
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button
+                onClick={handleBallSubmission}
+                loading={isLoading}
+                disabled={isLoading}
+                className="flex-1"
+                size="large"
+              >
+                {isLoading ? 'Submitting...' : 'Submit Ball'}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const strikerId = localStorage.getItem("strikerId");
+                  const nonStrikerId = localStorage.getItem("nonStrikerId");
+                  localStorage.setItem("strikerId", nonStrikerId);
+                  localStorage.setItem("nonStrikerId", strikerId);
+                  // Call swap API here
+                  GetData();
+                }}
+                className="flex-1"
+              >
+                Swap Batsmen
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bowler Stats */}
+        <div className="card mt-8">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Bowling - {matchData.bowler.name}
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {matchData.bowler.wickets}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Wickets</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {matchData.bowler.runs}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Runs</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {matchData.bowler.overs}.{matchData.currentBall}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Overs</div>
+            </div>
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {matchData.bowler.overs > 0 
+                  ? (matchData.bowler.runs / matchData.bowler.overs).toFixed(2)
+                  : '0.00'
+                }
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Economy</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
